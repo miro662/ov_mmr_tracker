@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block "content" %}
+    <h1>List of matches</h1>
+    
+    {% for match in matches %}
+        <div>
+            <ul>
+                <li>{{match.mmr_after}}</li>
+                <li>{{match.user}}</li>
+                <li>prev match: {{match.previousMatch}}</li>
+                <li>change: {{match.mmrDifference}}</li>
+                <ul>
+                    {% for character in match.characters.all %}
+                        <li>{{character.name}}</li>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+    {% empty %}
+    No matches played yet
+    {% endfor %}
+{% endblock "content" %}

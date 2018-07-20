@@ -66,3 +66,11 @@ class MatchModelTest(TestCase):
 
         self.assertIsNone(self.matches[0].previousMatch())
         self.assertIsNone(self.matches[2].previousMatch())
+    
+    def testMmrDifferenceMethod(self):
+        """ Tests if mmrDifference method correctly calculates MMR difference
+        """
+        self.assertEqual(self.matches[0].mmrDifference(), 0)
+        self.assertEqual(self.matches[1].mmrDifference(), 1000)
+        self.assertEqual(self.matches[2].mmrDifference(), 0)
+        self.assertEqual(self.matches[3].mmrDifference(), -1000)

@@ -48,4 +48,4 @@ class Match(models.Model):
         previous_match = self.previousMatch()
         if previous_match is None:
             return 0
-        return self.mmr - previous_match.mmr
+        return self.mmr_after - previous_match.mmr_after

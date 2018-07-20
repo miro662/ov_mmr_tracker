@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "36fba6254ea3e00096ebd2dc09e5375664f5f244d1fe8b9a0d1f36df409bf87e"
+            "sha256": "137377cb3f6bdba5a43b9c75352f1037606d13a68a6ecdc02ab0602f0d66f702"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -23,6 +23,21 @@
             ],
             "index": "pypi",
             "version": "==2.0.7"
+        },
+        "django-bootstrap4": {
+            "hashes": [
+                "sha256:6db4a27b33851833e68b96344f9df063150dcace8d4787ebfc21eceb55196945"
+            ],
+            "index": "pypi",
+            "version": "==0.0.6"
+        },
+        "django-forms-bootstrap": {
+            "hashes": [
+                "sha256:50d69baf6c6f262f6ae3651096b52c31552cb75d37493f0c917ce2c16d13f0d9",
+                "sha256:ffc6d2b9fba03e2366884e82f613daf1284702e9346746e0e9de299db8138d6f"
+            ],
+            "index": "pypi",
+            "version": "==3.1.0"
         },
         "psycopg2-binary": {
             "hashes": [
@@ -71,10 +86,10 @@
     "develop": {
         "astroid": {
             "hashes": [
-                "sha256:8704779744963d56a2625ec2949eb150bd499fc099510161ddbb2b64e2d98138",
-                "sha256:add3fd690e7c1fe92436d17be461feeaa173e6f33e0789734310334da0f30027"
+                "sha256:0a0c484279a5f08c9bcedd6fa9b42e378866a7dcc695206b92d59dc9f2d9760d",
+                "sha256:218e36cf8d98a42f16214e8670819ce307fa707d1dcf7f9af84c7aede1febc7f"
             ],
-            "version": "==2.0"
+            "version": "==2.0.1"
         },
         "isort": {
             "hashes": [

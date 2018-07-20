@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 django = "*"
 "psycopg2-binary" = "*"
+django-forms-bootstrap = "*"
+"django-bootstrap4" = "*"
 
 [dev-packages]
 pylint = "*"

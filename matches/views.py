@@ -1,17 +1,11 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
+from .models import Match
 
+@login_required
 def index_page(request):
-    page = """
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Temporary main page</title>
-    </head>
-    <body>
-        <p>Temporary main page</p>
-    </body>
-</html>
-    """
-    return HttpResponse(page)
+    matches = Match.objects.filter(user=request.user)
+    return render(request, "matches_list.html", {
+        'matches': matches
+    })
