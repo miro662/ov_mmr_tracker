@@ -7,5 +7,14 @@ from .models import Match
 def index_page(request):
     matches = Match.objects.filter(user=request.user)
     return render(request, "matches_list.html", {
-        'matches': matches
+        'matches': [
+            {
+                'characters': m.characters.all(),
+                'characters_list': ', '.join([str(x) for x in list(m.characters.all())]),
+                'mmr_after': m.mmr_after,
+                'mmr_difference': m.mmrDifference(),
+                'won': m.mmrDifference() > 0,
+                'lost': m.mmrDifference() < 0,
+            } for m in matches
+        ]
     })
