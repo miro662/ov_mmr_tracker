@@ -1,7 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
 
 from .models import Match
+from .forms import MatchForm
 
 @login_required
 def index_page(request):
@@ -18,3 +20,22 @@ def index_page(request):
             } for m in matches
         ]
     })
+
+@login_required
+def new_match(request):
+    if request.method == 'POST':
+        form = MatchForm(request.POST)
+        if form.is_valid():
+            match = form.save(commit=False)
+            match.user = request.user
+            match.save()
+            form.save_m2m()
+            return HttpResponseRedirect('/matches/list')
+        else:
+            return render(request, "new_match.html", {
+                'form': form
+            })
+    elif request.method == 'GET':
+        return render(request, "new_match.html", {
+            'form': MatchForm
+        })
