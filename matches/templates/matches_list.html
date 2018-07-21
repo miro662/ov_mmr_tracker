@@ -25,7 +25,7 @@
                             {% if match.mmr_difference > 0 %}+{% endif %}{{match.mmr_difference}}
                         </td>
                         <td style="text-align: right">
-                            <a class="btn btn-secondary btn-sm" href="#">Edit</a>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'matches_edit' match.pk %}">Edit</a>
                             <a class="btn btn-danger btn-sm" href="#">Delete</a>
                         </td>
                     </tr>
