@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseForbidden
 
 from .models import Match
 from .forms import MatchForm
@@ -46,6 +46,9 @@ def edit_match(request, pk):
     if request.method == 'POST':
         form = MatchForm(request.POST)
         if form.is_valid():
+            match = form.save(commit=False)
+            if match.user != request.user:
+                return HttpResponseForbidden('This match is not a match of a logged user!')
             match = form.save()
             return HttpResponseRedirect('/matches/list')
         else:
@@ -57,7 +60,21 @@ def edit_match(request, pk):
             match = Match.objects.get(pk=pk)
         except Match.DoesNotExist:
             raise Http404('Match does not exist')
+        if match.user != request.user:
+            return HttpResponseForbidden('This match is not a match of a logged user!')
         form = MatchForm(instance=match)
         return render(request, "edit_match.html", {
             'form': form
         })
+
+@login_required
+def delete_match(request, pk):
+    try:
+        match = Match.objects.get(pk=pk)
+    except Match.DoesNotExist:
+        raise Http404('Match does not exist')
+    
+    if match.user != request.user:
+        return HttpResponseForbidden('This match is not a match of a logged user!')
+    match.delete()
+    return HttpResponseRedirect('/matches/list')

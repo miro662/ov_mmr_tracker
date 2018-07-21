@@ -26,7 +26,7 @@
                         </td>
                         <td style="text-align: right">
                             <a class="btn btn-secondary btn-sm" href="{% url 'matches_edit' match.pk %}">Edit</a>
-                            <a class="btn btn-danger btn-sm" href="#">Delete</a>
+                            <a class="btn btn-danger btn-sm" href="{% url 'matches_delete' match.pk %}">Delete</a>
                         </td>
                     </tr>
             {% endfor %}
