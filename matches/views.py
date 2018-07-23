@@ -12,7 +12,6 @@ def index_page(request):
         'matches': [
             {
                 'pk': m.pk,
-                'characters': m.characters.all(),
                 'characters_list': ', '.join([str(x) for x in list(m.characters.all())]),
                 'mmr_after': m.mmr_after,
                 'mmr_difference': m.mmrDifference(),
