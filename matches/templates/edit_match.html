@@ -3,7 +3,7 @@
 
 {% block "content" %}
     <h1>Edit match</h1>
-    <form method="post" action="{% url 'matches_new' %}" style="margin-top: 1em">
+    <form method="post" action="{% url 'matches_edit' pk %}" style="margin-top: 1em">
         {% bootstrap_form form %}
         {% csrf_token %}
         {% buttons %}
