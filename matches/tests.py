@@ -311,7 +311,12 @@ class EditMatchViewTest(TestCase):
             match.mmr_after,
             700,
             'MMR should be modified by valid POST request'
-        ) # why the fuck this does not work?
+        )
+        self.assertEqual(
+            response.status_code,
+            302,
+            'Response should have 302 (Found) status code - redirect'
+        )
 
     def testPostRequestWithInvalidData(self):
         """ If data sent in POST request is incorrect, view should
@@ -376,3 +381,59 @@ class EditMatchViewTest(TestCase):
             404,
             'Status code of POST edit request of non-existent Match should be 404'
         )
+
+
+class DeleteMatchTestView(TestCase):
+    def setUp(self):
+        _createSampleData(self)
+        self.client = Client()
+        # Log in
+        self.assertTrue(
+            self.client.login(username='jimlahey', password='testTEST')
+        )
+
+    def tearDown(self):
+        # Log out
+        self.client.logout()
+    
+    def test404(self):
+        """ Test if trying to delete non-existent match returns 404
+        """
+        response = self.client.get('/matches/delete/12345')
+        self.assertEqual(
+            response.status_code,
+            404,
+            'Status code of GET delete request on non-existent Match should be 404'
+        )
+    
+    def testDeletingMatch(self):
+        """ Test if DeleteMatch viev properly deletes match belonging
+            to currently logged in user
+        """
+        pk_of_deleted = self.matches[1].pk
+        self.assertEqual(self.matches[1].user, self.users[0])
+        response = self.client.get('/matches/delete/{}'.format(pk_of_deleted))
+        # Try to find recently deleted match
+        with self.assertRaises(Match.DoesNotExist):
+            Match.objects.get(pk=pk_of_deleted)
+        self.assertEqual(
+            response.status_code,
+            302,
+            'Response should have 302 (Found) status code - redirect'
+        )
+
+    def testTryingToDeleteNotLoggedInUserMatch(self):
+        """ View should return Forbidden error when someone tries to delete 
+            match that does not belong to currently logged in user and not
+            delete that match
+        """
+        pk_of_deleted = self.matches[2].pk
+        response = self.client.get(
+            '/matches/delete/{}'.format(pk_of_deleted)
+        )
+        self.assertEqual(
+            response.status_code,
+            403,
+            'HTTP status code for response to GET should be 403 (Forbidden)'
+        )
+        self.assertIsNotNone(Match.objects.get(pk=pk_of_deleted))
