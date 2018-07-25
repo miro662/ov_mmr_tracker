@@ -37,7 +37,7 @@ def new_match(request):
             })
     elif request.method == 'GET':
         return render(request, "new_match.html", {
-            'form': MatchForm
+            'form': MatchForm()
         })
 
 @login_required

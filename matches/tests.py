@@ -1,8 +1,10 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.forms import ModelForm
 
 from characters.models import Character
 from .models import Match
+from .forms import MatchForm
 
 def _createSampleData(self):
     self.users = [
@@ -46,6 +48,7 @@ def _createSampleData(self):
     for m in self.matches:
         m.save()
 
+
 class MatchModelTest(TestCase):
     def setUp(self):
         _createSampleData(self)
@@ -78,6 +81,7 @@ class MatchModelTest(TestCase):
         self.assertEqual(self.matches[1].mmrDifference(), 1000)
         self.assertEqual(self.matches[2].mmrDifference(), 0)
         self.assertEqual(self.matches[3].mmrDifference(), -1000)
+
 
 class IndexPageViewTest(TestCase):
     def setUp(self):
@@ -146,3 +150,89 @@ class IndexPageViewTest(TestCase):
             response.context['matches'][1]['pk'],
             self.matches[0].pk
         )
+    
+
+class NewMatchViewTest(TestCase):
+    def setUp(self):
+        _createSampleData(self)
+        self.client = Client()
+
+    def testIfGetRequestReturnsEmptyModelFormWithoutRelatedInstance(self):
+        """ GET request to /matches/new should return empty ModelForm
+            without related instance
+        """
+        # Log in
+        self.assertTrue(
+            self.client.login(username='jimlahey', password='testTEST')
+        )
+
+        # Make GET request to /matches/new
+        response = self.client.get('/matches/new')
+        # Get form
+        form = response.context['form']
+        # Check if MatchForm hasn't instance; if so, PK should be None
+        self.assertFalse(form.is_bound)
+        self.assertIsNone(form.instance.pk)
+
+    def testIfPostRequestWithValidDataCreatesValidInstance(self):
+        """ POST request to /matches/new with valid data should create
+            new Match
+        """
+        # Log in
+        self.assertTrue(
+            self.client.login(username='jimlahey', password='testTEST')
+        )
+
+        # Make POST request with valid data
+        response = self.client.post('/matches/new', data={
+            'characters': self.characters[0].pk,
+            'mmr_after': 5000
+        })
+
+        # Check if there is new match in database
+        Match.objects.get(mmr_after=5000)
+
+        # Check if we've got redirect request (302 - Found)
+        self.assertEqual(302, response.status_code)
+
+        # Log out
+        self.client.logout()
+
+    def testIfPostRequestWithInvalidDataDoesNotCreateNewInstance(self):
+        """ POST request to /matches/new with invalid data should not create
+            new Match, it should render matches_new template and pass 
+            form with errors to it
+        """
+        def checkResponse(self, response, expected_mmr_after=None):
+            """ Check if response contains invalid form and nothing were created
+            """
+            form = response.context["form"]
+            self.assertFalse(form.is_valid())
+            if expected_mmr_after is not None:
+                with self.assertRaises(Match.DoesNotExist):
+                    Match.objects.get(mmr_after=expected_mmr_after)
+
+        # Log in
+        self.assertTrue(
+            self.client.login(username='jimlahey', password='testTEST')
+        )
+
+        # Make POST requests with invalid data and check responses
+        # MMR < 0
+        response = self.client.post('/matches/new', data={
+            'characters': self.characters[0].pk,
+            'mmr_after': -20
+        })
+        checkResponse(self, response, -20)
+        # No characters
+        response = self.client.post('/matches/new', data={
+            'characters': '',
+            'mmr_after': 500
+        })
+        checkResponse(self, response, 500)
+        # No data
+        response = self.client.post('/matches/new', data={})
+        checkResponse(self, response)
+
+        # Log out
+        self.client.logout()
