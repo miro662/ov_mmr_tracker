@@ -156,16 +156,19 @@ class NewMatchViewTest(TestCase):
     def setUp(self):
         _createSampleData(self)
         self.client = Client()
-
-    def testIfGetRequestReturnsEmptyModelFormWithoutRelatedInstance(self):
-        """ GET request to /matches/new should return empty ModelForm
-            without related instance
-        """
         # Log in
         self.assertTrue(
             self.client.login(username='jimlahey', password='testTEST')
         )
 
+    def tearDown(self):
+        # Log out
+        self.client.logout()
+
+    def testIfGetRequestReturnsEmptyModelFormWithoutRelatedInstance(self):
+        """ GET request to /matches/new should return empty ModelForm
+            without related instance
+        """
         # Make GET request to /matches/new
         response = self.client.get('/matches/new')
         # Get form
@@ -178,11 +181,6 @@ class NewMatchViewTest(TestCase):
         """ POST request to /matches/new with valid data should create
             new Match
         """
-        # Log in
-        self.assertTrue(
-            self.client.login(username='jimlahey', password='testTEST')
-        )
-
         # Make POST request with valid data
         response = self.client.post('/matches/new', data={
             'characters': self.characters[0].pk,
@@ -190,13 +188,15 @@ class NewMatchViewTest(TestCase):
         })
 
         # Check if there is new match in database
-        Match.objects.get(mmr_after=5000)
+        new_match = Match.objects.get(mmr_after=5000)
+        self.assertEqual(
+            new_match.user,
+            self.users[0],
+            'New match\'s user should be user that is currently logged in'
+        )
 
         # Check if we've got redirect request (302 - Found)
         self.assertEqual(302, response.status_code)
-
-        # Log out
-        self.client.logout()
 
     def testIfPostRequestWithInvalidDataDoesNotCreateNewInstance(self):
         """ POST request to /matches/new with invalid data should not create
@@ -211,11 +211,6 @@ class NewMatchViewTest(TestCase):
             if expected_mmr_after is not None:
                 with self.assertRaises(Match.DoesNotExist):
                     Match.objects.get(mmr_after=expected_mmr_after)
-
-        # Log in
-        self.assertTrue(
-            self.client.login(username='jimlahey', password='testTEST')
-        )
 
         # Make POST requests with invalid data and check responses
         # MMR < 0
@@ -234,5 +229,150 @@ class NewMatchViewTest(TestCase):
         response = self.client.post('/matches/new', data={})
         checkResponse(self, response)
 
+
+class EditMatchViewTest(TestCase):
+    def setUp(self):
+        _createSampleData(self)
+        self.client = Client()
+        # Log in
+        self.assertTrue(
+            self.client.login(username='jimlahey', password='testTEST')
+        )
+
+    def tearDown(self):
         # Log out
         self.client.logout()
+
+    def testTryingToEditNotUsersMatch(self):
+        """ View should return Forbidden error when someone tries to edit 
+            match that does not belong to currently logged in user
+        """
+        # Test for GET request
+        response = self.client.get(
+            '/matches/edit/{}'.format(self.matches[2].pk)
+        )
+        self.assertEqual(
+            response.status_code,
+            403,
+            'HTTP status code for response to GET should be 403 (Forbidden)'
+        )
+        
+        # Test for POST request
+        response = self.client.post('/matches/edit/{}'.format(self.matches[2].pk), data = {
+            'characters': self.characters[0].pk,
+            'mmr_after': 600
+        })
+        self.assertEqual(
+            response.status_code,
+            403,
+            'HTTP status code for response to POST should be 403 (Forbidden)'
+        )
+        with self.assertRaises(Match.DoesNotExist):
+            Match.objects.get(mmr_after=600)
+
+    def testGetRequest(self):
+        """ View should return MatchForm with attached model
+            when request method is GET
+        """
+        response = self.client.get(
+            '/matches/edit/{}'.format(self.matches[0].pk)
+        )
+        form = response.context["form"]
+        self.assertEqual(
+            form.instance,
+            Match.objects.get(pk=self.matches[0].pk),
+            'Match instance bound to form should be match with given primary key'
+        )
+        self.assertEqual(
+            self.matches[0].pk,
+            response.context['pk'],
+            'PK context value should be edited object\'s primary key'
+        )
+
+    def testPostRequestWithValidData(self):
+        """ If data sent in POST request is correct, view should
+            update this model with given data
+        """
+        response = self.client.post(
+            '/matches/edit/{}'.format(self.matches[0].pk),
+            data={
+                'mmr_after': 700,
+                'characters': self.characters[1].pk
+            }
+        ) 
+        # Load updated match data from database
+        match = Match.objects.get(pk=self.matches[0].pk)
+        self.assertEqual(
+            list(match.characters.all()),
+            [self.characters[1]],
+            'Characters should be modified by valid POST request'
+        ) 
+        self.assertEqual(
+            match.mmr_after,
+            700,
+            'MMR should be modified by valid POST request'
+        ) # why the fuck this does not work?
+
+    def testPostRequestWithInvalidData(self):
+        """ If data sent in POST request is incorrect, view should
+            render form with errors and change nothing
+        """
+        def checkResponse(self, response, instance, former_mmr, former_characters):
+            """ Check if response contains invalid form and nothing were created
+            """
+            form = response.context["form"]
+            self.assertFalse(form.is_valid())
+            self.assertEqual(
+                list(instance.characters.all()),
+                former_characters,
+                'Characters should not be modified by invalid POST request'
+            ) 
+            self.assertEqual(
+                instance.mmr_after,
+                former_mmr,
+                'MMR should not be modified by invalid POST request'
+            )
+            self.assertEqual(
+                instance.pk,
+                response.context['pk'],
+                'PK context value should be edited object\'s primary key'
+            )
+
+        # Make POST requests with invalid data and check responses
+        # MMR < 0
+        response = self.client.post(
+            '/matches/edit/{}'.format(self.matches[0].pk), data={
+                'characters': self.characters[0].pk,
+                'mmr_after': -20
+            }
+        )
+        checkResponse(self, response, self.matches[0], 2000, [self.characters[0]])
+        # No characters
+        response = self.client.post(
+            '/matches/edit/{}'.format(self.matches[0].pk), data={
+                'characters': '',
+                'mmr_after': 2000
+            }
+        )
+        checkResponse(self, response, self.matches[0], 2000, [self.characters[0]])
+        # No data
+        response = self.client.post(
+            '/matches/edit/{}'.format(self.matches[0].pk), data={}
+        )
+        checkResponse(self, response, self.matches[0], 2000, [self.characters[0]])
+
+    def test404(self):
+        """ Test if trying to edit non-existent match returns 404
+        """
+        response = self.client.get('/matches/edit/12345')
+        self.assertEqual(
+            response.status_code,
+            404,
+            'Status code of GET edit request of non-existent Match should be 404'
+        )
+        response = self.client.post('/matches/edit/12345')
+        self.assertEqual(
+            response.status_code,
+            404,
+            'Status code of POST edit request of non-existent Match should be 404'
+        )

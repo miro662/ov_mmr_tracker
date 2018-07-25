@@ -48,7 +48,6 @@ def edit_match(request, pk):
         raise Http404('Match does not exist')
     if match.user != request.user:
         return HttpResponseForbidden('This match is not a match of a logged user!')
-    print(match)
     
     if request.method == 'POST':
         form = MatchForm(request.POST, instance=match)
