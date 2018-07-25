@@ -84,6 +84,8 @@ class MatchModelTest(TestCase):
 
 
 class IndexPageViewTest(TestCase):
+    INDEX_PAGE_VIEW_URL='/matches/list'
+
     def setUp(self):
         _createSampleData(self)
         self.client = Client()
@@ -92,7 +94,7 @@ class IndexPageViewTest(TestCase):
         """ Index page view should return empty matches table when there are no matches
         """
         self.assertTrue(self.client.login(username='user_without_matches', password='testTEST'))
-        response = self.client.get('/matches/list')
+        response = self.client.get(self.INDEX_PAGE_VIEW_URL)
         self.assertEqual(
             len(response.context['matches']), 
             0
@@ -116,7 +118,7 @@ class IndexPageViewTest(TestCase):
 
         # Test for user jimlahey
         self.assertTrue(self.client.login(username='jimlahey', password='testTEST'))
-        response = self.client.get('/matches/list')
+        response = self.client.get(self.INDEX_PAGE_VIEW_URL)
         self.assertEqual(
             len(response.context['matches']),
             2
@@ -127,7 +129,7 @@ class IndexPageViewTest(TestCase):
 
         # Test for user randy
         self.assertTrue(self.client.login(username='randy', password='testTEST'))
-        response = self.client.get('/matches/list')
+        response = self.client.get(self.INDEX_PAGE_VIEW_URL)
         self.assertEqual(
             len(response.context['matches']),
             2
@@ -140,7 +142,7 @@ class IndexPageViewTest(TestCase):
         """ Tests if matches are passed in correct order 
         """
         self.assertTrue(self.client.login(username='jimlahey', password='testTEST'))
-        response = self.client.get('/matches/list')
+        response = self.client.get(self.INDEX_PAGE_VIEW_URL)
         # Match added later should be first
         self.assertEqual(
             response.context['matches'][0]['pk'],
@@ -150,9 +152,12 @@ class IndexPageViewTest(TestCase):
             response.context['matches'][1]['pk'],
             self.matches[0].pk
         )
+        self.client.logout()
     
 
 class NewMatchViewTest(TestCase):
+    NEW_MATCH_VIEW_URL='/matches/new'
+
     def setUp(self):
         _createSampleData(self)
         self.client = Client()
@@ -170,7 +175,7 @@ class NewMatchViewTest(TestCase):
             without related instance
         """
         # Make GET request to /matches/new
-        response = self.client.get('/matches/new')
+        response = self.client.get(self.NEW_MATCH_VIEW_URL)
         # Get form
         form = response.context['form']
         # Check if MatchForm hasn't instance; if so, PK should be None
@@ -182,7 +187,7 @@ class NewMatchViewTest(TestCase):
             new Match
         """
         # Make POST request with valid data
-        response = self.client.post('/matches/new', data={
+        response = self.client.post(self.NEW_MATCH_VIEW_URL, data={
             'characters': self.characters[0].pk,
             'mmr_after': 5000
         })
@@ -207,30 +212,32 @@ class NewMatchViewTest(TestCase):
             """ Check if response contains invalid form and nothing were created
             """
             form = response.context["form"]
-            self.assertFalse(form.is_valid())
+            self.assertFalse(form.is_valid(), "Form should be invalid")
             if expected_mmr_after is not None:
                 with self.assertRaises(Match.DoesNotExist):
                     Match.objects.get(mmr_after=expected_mmr_after)
 
         # Make POST requests with invalid data and check responses
         # MMR < 0
-        response = self.client.post('/matches/new', data={
+        response = self.client.post(self.NEW_MATCH_VIEW_URL, data={
             'characters': self.characters[0].pk,
             'mmr_after': -20
         })
         checkResponse(self, response, -20)
         # No characters
-        response = self.client.post('/matches/new', data={
+        response = self.client.post(self.NEW_MATCH_VIEW_URL, data={
             'characters': '',
             'mmr_after': 500
         })
         checkResponse(self, response, 500)
         # No data
-        response = self.client.post('/matches/new', data={})
+        response = self.client.post(self.NEW_MATCH_VIEW_URL, data={})
         checkResponse(self, response)
 
 
 class EditMatchViewTest(TestCase):
+    EDIT_MATCH_VIEW_URL='/matches/edit/{}'
+
     def setUp(self):
         _createSampleData(self)
         self.client = Client()
@@ -249,7 +256,7 @@ class EditMatchViewTest(TestCase):
         """
         # Test for GET request
         response = self.client.get(
-            '/matches/edit/{}'.format(self.matches[2].pk)
+            self.EDIT_MATCH_VIEW_URL.format(self.matches[2].pk)
         )
         self.assertEqual(
             response.status_code,
@@ -258,7 +265,7 @@ class EditMatchViewTest(TestCase):
         )
         
         # Test for POST request
-        response = self.client.post('/matches/edit/{}'.format(self.matches[2].pk), data = {
+        response = self.client.post(self.EDIT_MATCH_VIEW_URL.format(self.matches[2].pk), data = {
             'characters': self.characters[0].pk,
             'mmr_after': 600
         })
@@ -275,7 +282,7 @@ class EditMatchViewTest(TestCase):
             when request method is GET
         """
         response = self.client.get(
-            '/matches/edit/{}'.format(self.matches[0].pk)
+            self.EDIT_MATCH_VIEW_URL.format(self.matches[0].pk)
         )
         form = response.context["form"]
         self.assertEqual(
@@ -294,7 +301,7 @@ class EditMatchViewTest(TestCase):
             update this model with given data
         """
         response = self.client.post(
-            '/matches/edit/{}'.format(self.matches[0].pk),
+            self.EDIT_MATCH_VIEW_URL.format(self.matches[0].pk),
             data={
                 'mmr_after': 700,
                 'characters': self.characters[1].pk
@@ -346,7 +353,7 @@ class EditMatchViewTest(TestCase):
         # Make POST requests with invalid data and check responses
         # MMR < 0
         response = self.client.post(
-            '/matches/edit/{}'.format(self.matches[0].pk), data={
+            self.EDIT_MATCH_VIEW_URL.format(self.matches[0].pk), data={
                 'characters': self.characters[0].pk,
                 'mmr_after': -20
             }
@@ -354,7 +361,7 @@ class EditMatchViewTest(TestCase):
         checkResponse(self, response, self.matches[0], 2000, [self.characters[0]])
         # No characters
         response = self.client.post(
-            '/matches/edit/{}'.format(self.matches[0].pk), data={
+            self.EDIT_MATCH_VIEW_URL.format(self.matches[0].pk), data={
                 'characters': '',
                 'mmr_after': 2000
             }
@@ -362,20 +369,20 @@ class EditMatchViewTest(TestCase):
         checkResponse(self, response, self.matches[0], 2000, [self.characters[0]])
         # No data
         response = self.client.post(
-            '/matches/edit/{}'.format(self.matches[0].pk), data={}
+            self.EDIT_MATCH_VIEW_URL.format(self.matches[0].pk), data={}
         )
         checkResponse(self, response, self.matches[0], 2000, [self.characters[0]])
 
     def test404(self):
         """ Test if trying to edit non-existent match returns 404
         """
-        response = self.client.get('/matches/edit/12345')
+        response = self.client.get(self.EDIT_MATCH_VIEW_URL.format(12345))
         self.assertEqual(
             response.status_code,
             404,
             'Status code of GET edit request of non-existent Match should be 404'
         )
-        response = self.client.post('/matches/edit/12345')
+        response = self.client.post(self.EDIT_MATCH_VIEW_URL.format(12345))
         self.assertEqual(
             response.status_code,
             404,
@@ -384,6 +391,8 @@ class EditMatchViewTest(TestCase):
 
 
 class DeleteMatchTestView(TestCase):
+    DELETE_MATCH_VIEW_URL = '/matches/delete/{}'
+    
     def setUp(self):
         _createSampleData(self)
         self.client = Client()
@@ -399,7 +408,7 @@ class DeleteMatchTestView(TestCase):
     def test404(self):
         """ Test if trying to delete non-existent match returns 404
         """
-        response = self.client.get('/matches/delete/12345')
+        response = self.client.get(self.DELETE_MATCH_VIEW_URL.format(12345))
         self.assertEqual(
             response.status_code,
             404,
@@ -412,7 +421,7 @@ class DeleteMatchTestView(TestCase):
         """
         pk_of_deleted = self.matches[1].pk
         self.assertEqual(self.matches[1].user, self.users[0])
-        response = self.client.get('/matches/delete/{}'.format(pk_of_deleted))
+        response = self.client.get(self.DELETE_MATCH_VIEW_URL.format(pk_of_deleted))
         # Try to find recently deleted match
         with self.assertRaises(Match.DoesNotExist):
             Match.objects.get(pk=pk_of_deleted)
@@ -429,7 +438,7 @@ class DeleteMatchTestView(TestCase):
         """
         pk_of_deleted = self.matches[2].pk
         response = self.client.get(
-            '/matches/delete/{}'.format(pk_of_deleted)
+            self.DELETE_MATCH_VIEW_URL.format(pk_of_deleted)
         )
         self.assertEqual(
             response.status_code,
