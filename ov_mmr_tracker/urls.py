@@ -23,5 +23,8 @@ urlpatterns = [
     path('accounts/logout/', LogoutView.as_view(), name="logout"),
     path('admin/', admin.site.urls),
     path('matches/', include('matches.urls')),
-    path('', index_page)
+    path('', index_page),
+
+    path('api/auth/', include('rest_framework.urls')),
+    #path('api/', include('api')),
 ]

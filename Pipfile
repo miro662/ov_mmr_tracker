@@ -8,9 +8,11 @@ django = "*"
 "psycopg2-binary" = "*"
 django-forms-bootstrap = "*"
 "django-bootstrap4" = "*"
+djangorestframework = "*"
 
 [dev-packages]
 pylint = "*"
+rope = "*"
 
 [requires]
 python_version = "3.7"
