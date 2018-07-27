@@ -1,7 +1,8 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.serializers import DateTimeField
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIRequestFactory, APIClient, force_authenticate
+from rest_framework import status
 
 from characters.models import Character
 from matches.models import Match
@@ -76,8 +77,7 @@ class TestMatchSerializer(TestCase):
             'id': self.match.id,
             'characters': [c.id for c in self.match.characters.all()],
             'date': DateTimeField().to_representation(self.match.date),
-            'mmr_after': self.match.mmr_after,
-            'user': self.match.user
+            'mmr_after': self.match.mmr_after
         }
         serializer = MatchSerializer(self.match)
         self.assertEqual(
@@ -144,3 +144,81 @@ class TestIsOwnerPermission(TestCase):
             self.permission.has_object_permission(post_request, None, self.match),
             'Permission should be denied for unsafe (e.g. POST) request with user which is not match owner'
         )
+
+
+class TestMatchesViewset(TestCase):
+    def setUp(self):
+        self.character = Character(name='Test', role=Character.DAMAGE)
+        self.character.save()
+
+        self.owner = User.objects.create_user('owner')
+        self.notOwner = User.objects.create_user('notowner')
+
+        self.match = Match(user=self.owner, mmr_after=1000)
+        self.match.save()
+        self.match.characters.set([self.character])
+
+        self.client = APIClient()
+    
+    API_MATCHES_LIST_URL = '/api/matches/'
+    def testListsOnlyMatchesOfLoggedUser(self):
+        """
+        GET request to API_MATCHES_LIST_URL should return only matches of logged user
+        """
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get(self.API_MATCHES_LIST_URL)
+        self.assertEqual(
+            status.HTTP_200_OK,
+            response.status_code,
+            'Request response code should be 200 (OK)'
+        )
+        self.assertEqual(
+            1,
+            len(response.data),
+            'Response data should contain 1 object'
+        )
+        self.assertEqual(
+            self.match.pk,
+            response.data[0]['id'],
+            'Object in response data should be match that belongs to user'
+        )
+        self.client.logout()
+
+        self.client.force_authenticate(user=self.notOwner)
+        response = self.client.get(self.API_MATCHES_LIST_URL)
+        self.assertEqual(
+            status.HTTP_200_OK,
+            response.status_code,
+            'Request response code should be 200 (OK)'
+        )
+        self.assertEqual(
+            0,
+            len(response.data),
+            'Response data should contain 0 objects'
+        )
+        self.client.logout()
+
+    API_MEW_MATCH_URL = API_MATCHES_LIST_URL
+    def testCreatedMatchBelongsToCurrenltyLoggedInUser(self):
+        """
+        POST request to API_NEW_MATCH_URL should automatically assign User
+        """
+        data = {
+            'characters': [self.character.pk],
+            'mmr_after': 5000
+        }
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(self.API_MEW_MATCH_URL, data=data)
+        self.assertEqual(
+            status.HTTP_201_CREATED,
+            response.status_code,
+            'Request response code should be 201 (Created)'
+        )
+        new_match = Match.objects.get(id=response.data['id'])
+        self.assertEqual(
+            new_match.user,
+            self.owner,
+            'User field of recently created match should be assigned to currently logged user'
+        )
+        self.client.logout()
+    

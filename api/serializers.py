@@ -11,7 +11,6 @@ class CharacterSerializer(serializers.ModelSerializer):
 
 
 class MatchSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField()
     class Meta:
         model = Match
-        fields = ('id', 'characters', 'date', 'mmr_after', 'user')
+        fields = ('id', 'characters', 'date', 'mmr_after')
