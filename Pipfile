@@ -9,6 +9,7 @@ django = "*"
 django-forms-bootstrap = "*"
 "django-bootstrap4" = "*"
 djangorestframework = "*"
+gunicorn = "*"
 
 [dev-packages]
 pylint = "*"
