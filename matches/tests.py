@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.forms import ModelForm
 
 from characters.models import Character
-from .models import Match
+from .models import Match, MatchWithPrevData
 from .forms import MatchForm
 
 def _createSampleData(self):
@@ -49,24 +49,72 @@ def _createSampleData(self):
         m.save()
 
 
+class MatchWithPrevDataModelTest(TestCase):
+    """
+    Tests MatchWithPrevData read-only model
+    """
+    def setUp(self):
+        _createSampleData(self)
+        self.withPrevData = [MatchWithPrevData.objects.get(pk=x.pk) for x in self.matches]
+    
+    def testStrMethod(self):
+        """
+        __str__ method should return string containing username and date of this match
+        """
+        self.assertEqual(str(self.withPrevData[0]), "{}, {}".format(str(self.withPrevData[0].user), str(self.withPrevData[0].date)))
+    
+    def testLastMatchMethod(self):
+        """ 
+        lastMatch method should return last match played by each user
+        """
+        self.assertEqual(MatchWithPrevData.lastMatch(self.users[0]), self.withPrevData[1])
+        self.assertEqual(MatchWithPrevData.lastMatch(self.users[1]), self.withPrevData[3])
+        self.assertIsNone(MatchWithPrevData.lastMatch(self.users[2]))
+    
+    def testPreviousMatchMethod(self):
+        """ 
+        previousMatch method should return previous match for every match (or None if there is no previous match)
+        """
+        self.assertEqual(self.withPrevData[1].previousMatch(), self.withPrevData[0])
+        self.assertEqual(self.withPrevData[3].previousMatch(), self.withPrevData[2])
+
+        self.assertIsNone(self.withPrevData[0].previousMatch())
+        self.assertIsNone(self.withPrevData[2].previousMatch())
+    
+    def testMmrDifferenceMethod(self):
+        """
+        mmrDifference method should correctly calculate MMR difference
+        """
+        self.assertEqual(self.withPrevData[0].mmrDifference(), 0)
+        self.assertEqual(self.withPrevData[1].mmrDifference(), 1000)
+        self.assertEqual(self.withPrevData[2].mmrDifference(), 0)
+        self.assertEqual(self.withPrevData[3].mmrDifference(), -1000)
+
+
 class MatchModelTest(TestCase):
+    """
+    Tests Match model (including deprecated methods)
+    """
     def setUp(self):
         _createSampleData(self)
     
     def testStrMethod(self):
-        """ Tests if str method works as it should
+        """
+        __str__ method should return string containing username and date of this match
         """
         self.assertEqual(str(self.matches[0]), "{}, {}".format(str(self.matches[0].user), str(self.matches[0].date)))
     
     def testLastMatchMethod(self):
-        """ Tests if lastMatch method returns last match played by each user
+        """ 
+        lastMatch method should return last match played by each user
         """
         self.assertEqual(Match.lastMatch(self.users[0]), self.matches[1])
         self.assertEqual(Match.lastMatch(self.users[1]), self.matches[3])
         self.assertIsNone(Match.lastMatch(self.users[2]))
     
     def testPreviousMatchMethod(self):
-        """ Tests if previousMatch method returns previous match for every match (or None if there is no previous match)
+        """ 
+        previousMatch method should return previous match for every match (or None if there is no previous match)
         """
         self.assertEqual(self.matches[1].previousMatch(), self.matches[0])
         self.assertEqual(self.matches[3].previousMatch(), self.matches[2])
@@ -75,7 +123,8 @@ class MatchModelTest(TestCase):
         self.assertIsNone(self.matches[2].previousMatch())
     
     def testMmrDifferenceMethod(self):
-        """ Tests if mmrDifference method correctly calculates MMR difference
+        """
+        mmrDifference method should correctly calculate MMR difference
         """
         self.assertEqual(self.matches[0].mmrDifference(), 0)
         self.assertEqual(self.matches[1].mmrDifference(), 1000)
