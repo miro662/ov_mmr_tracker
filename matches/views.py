@@ -2,12 +2,12 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseForbidden
 
-from .models import Match
+from .models import Match, MatchWithPrevData
 from .forms import MatchForm
 
 @login_required
 def index_page(request):
-    matches = Match.objects.filter(user=request.user)
+    matches = MatchWithPrevData.objects.filter(user=request.user)
     return render(request, "matches_list.html", {
         'matches': [
             {

@@ -52,6 +52,7 @@ class Match(models.Model):
             return 0
         return prevData.mmr_difference
 
+
 class MatchWithPrevData(models.Model):
     """ Describes single Overwatch match, with data about previous matches included
     This is read-only model!
@@ -71,7 +72,6 @@ class MatchWithPrevData(models.Model):
 
     date = models.DateTimeField(auto_now_add=True)
     mmr_after = models.PositiveIntegerField()
-    characters = models.ManyToManyField(to=Character)
     user = models.ForeignKey(to=User, on_delete=models.CASCADE)
     last_match_id = models.IntegerField(null=True)
     mmr_difference = models.IntegerField(null=True)
@@ -108,7 +108,13 @@ class MatchWithPrevData(models.Model):
     def mmrDifference(self):
         """ Returns how much MMR has changed from previous match, 0 if this is first match
         """
-        previous_match = self.previousMatch()
-        if previous_match is None:
+        if self.mmr_difference is None:
             return 0
         return self.mmr_difference
+
+    @property
+    def characters(self):
+        """
+        Returns list of characters related to this match
+        """
+        return Character.objects.filter(match__pk=self.pk)
